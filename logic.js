@@ -11,7 +11,9 @@
     greutateMaxTestataKg: 13,    // PURATOS: găleți de 13 kg
     debitTestat5kg: 8.6,         // găleți/min, rezultat de test PURATOS
     debitTestat13kg: 7.4,        // găleți/min, rezultat de test PURATOS
-    debitTinta: 6                // găleți/min, ținta PURATOS
+    debitTinta: 6,               // găleți/min, ținta PURATOS
+    segmentMinKg: 5,             // segmentul comercial al echipei: găleți de 5–15 kg (doar pentru calificarea cererii)
+    segmentMaxKg: 15
   });
 
   var EPS = 1e-9;
@@ -105,10 +107,10 @@
         note.push({
           cod: 'blocaj_amonte',
           text: formatExact
-            ? 'Linia dvs. (' + fmt(debit) + ' găleți/min) este mai lentă decât valoarea testată la PURATOS pentru ' + galeataRef + ' (' + fmt(ref) +
-              ' găleți/min): limita este în amonte, la umplere. Robotul nu crește debitul fabricii.'
-            : 'Linia dvs. (' + fmt(debit) + ' găleți/min) este sub reperul de ' + fmt(ref) + ' găleți/min, testat la PURATOS pentru ' + galeataRef +
-              ', nu pentru formatul dvs.: comparația este orientativă. Dacă se confirmă la evaluarea tehnică, limita este în amonte, la umplere, iar robotul nu crește debitul fabricii.'
+            ? 'Debitul introdus (' + fmt(debit) + ' găleți/min) este sub ritmul testat la PURATOS pentru ' + galeataRef + ' (' + fmt(ref) +
+              ' găleți/min). Un robot mai rapid nu crește singur debitul fabricii: verificați alimentarea, opririle și schimbarea paleților, ca să localizați blocajul.'
+            : 'Debitul introdus (' + fmt(debit) + ' găleți/min) este sub reperul de ' + fmt(ref) + ' găleți/min, testat la PURATOS pentru ' + galeataRef +
+              ', nu pentru formatul dvs.: comparația este orientativă. Un robot mai rapid nu crește singur debitul fabricii: verificați alimentarea, opririle și schimbarea paleților, ca să localizați blocajul.'
         });
       }
     } else {
@@ -233,13 +235,17 @@
     var c = contact || {};
     var lipsuri = [];
     var dateLipsa = 0;    // date tehnice sau de contact necompletate
-    var separat = 0;      // date complete, dar în afara segmentului (altă industrie sau verdict „în afara”)
+    var separat = 0;      // date complete, dar în afara segmentului (altă industrie, găleată sub 5 kg sau peste 15 kg, ori verdict „în afara”)
 
     CAMPURI_TEHNICE.forEach(function (camp) {
       if (!camp[2](i[camp[0]])) { lipsuri.push(camp[1]); dateLipsa++; }
     });
     if (!rezultat || !rezultat.verdict) { lipsuri.push('Lipsește verdictul verificării'); dateLipsa++; }
     if (i.industrie === 'alta') { lipsuri.push('Industria nu este cea alimentară: cerințele tehnice se validează separat'); separat++; }
+    if (typeof i.greutateKg === 'number' && isFinite(i.greutateKg) &&
+        (i.greutateKg < REFERINTA.segmentMinKg - EPS || i.greutateKg > REFERINTA.segmentMaxKg + EPS)) {
+      lipsuri.push('Găleata de ' + fmt(i.greutateKg) + ' kg este în afara segmentului de 5–15 kg: se validează separat'); separat++;
+    }
     if (rezultat && rezultat.verdict === 'in_afara') { lipsuri.push('Verdict în afara aplicației de referință'); separat++; }
     if (!completat(c.firma)) { lipsuri.push('Lipsește firma'); dateLipsa++; }
     if (!completat(c.rol)) { lipsuri.push('Lipsește rolul'); dateLipsa++; }

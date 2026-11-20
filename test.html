@@ -189,7 +189,11 @@
           exact('Sarcină totală, kg (13 + 5)', 18, function (r) { return r.calcule.sarcinaTotalaKg; }),
           exact('Capacitate UR20, kg', 20, function (r) { return r.calcule.capacitateKg; }),
           exact('Blocaj', 'amonte', function (r) { return r.blocaj; }, '„amonte” (linia, 6, e mai lentă decât 7,4)'),
-          cuNota('blocaj_amonte', 'limita este în amonte')
+          cuNota('blocaj_amonte', 'debit sub reperul testat'),
+          adevarat('Textul notei despre blocaj', 'conține „nu crește singur debitul fabricii” și nu conține „limita este în amonte”',
+            function (r) { var n = (r.note || []).filter(function (x) { return x.cod === 'blocaj_amonte'; })[0]; return n ? '„' + n.text + '”' : '(nota lipsește)'; },
+            function (r) { var n = (r.note || []).filter(function (x) { return x.cod === 'blocaj_amonte'; })[0];
+              return !!n && n.text.indexOf('nu crește singur debitul fabricii') !== -1 && n.text.indexOf('limita este în amonte') === -1; })
         ] },
         { nume: '2. Limită: exact 5 kg, 100 pe palet, debit exact 8,6', intrare: 'greutate 5, găleți pe palet 100, debit 8,6',
           ruleaza: ev(cu({ greutateKg: 5, galetiPePalet: 100, debitGaletiMin: 8.6 })), verificari: [
@@ -261,7 +265,7 @@
     },
     {
       titlu: 'calificaCererea(): cerere relevantă, incompletă sau de validat separat',
-      text: 'Relevantă numai cu industrie alimentară, verdict diferit de „în afara referinței”, date tehnice complete și firmă, rol, județ. Cu date complete, dar altă industrie sau verdict „în afara referinței”: de validat separat.',
+      text: 'Relevantă numai cu industrie alimentară, găleată de 5–15 kg, verdict diferit de „în afara referinței”, date tehnice complete și firmă, rol, județ. Cu date complete, dar altă industrie, găleată în afara segmentului de 5–15 kg sau verdict „în afara referinței”: de validat separat.',
       teste: (function () {
         var contact = { firma: 'Firma Demo SRL', rol: 'Director de producție', judet: 'Ilfov' };
         function cc(input, c) { return function () { return L.calificaCererea(input, L.evaluate(input), c); }; }
@@ -293,6 +297,20 @@
           { nume: 'Fără rol și altă industrie', intrare: 'industrie: alta, rol gol', ruleaza: cc(cu({ industrie: 'alta' }), { firma: contact.firma, rol: '', judet: contact.judet }), verificari: [
             exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
             eticheta('Cerere incompletă'), tip('incompleta'), lipsa('Lipsește rolul')
+          ] },
+          { nume: 'Găleată de 4 kg (sub segmentul de 5–15 kg)', intrare: 'greutate 4 + firmă, rol, județ', ruleaza: cc(cu({ greutateKg: 4 }), contact), verificari: [
+            exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
+            eticheta('Cerere de validat separat'), tip('validare_separata'),
+            lipsa('Găleata de 4 kg este în afara segmentului de 5–15 kg: se validează separat')
+          ] },
+          { nume: 'Limită: exact 5 kg (în segment)', intrare: 'greutate 5 + firmă, rol, județ', ruleaza: cc(cu({ greutateKg: 5 }), contact), verificari: [
+            exact('Relevantă', true, function (r) { return r.relevanta; }, 'da (true)'),
+            eticheta('Cerere relevantă'), tip('relevanta')
+          ] },
+          { nume: 'Limită: exact 15 kg (în segment, verdict „validare”)', intrare: 'greutate 15 + firmă, rol, județ', ruleaza: cc(cu({ greutateKg: 15 }), contact), verificari: [
+            exact('Verdict', 'validare', function (r) { return L.evaluate(cu({ greutateKg: 15 })).verdict; }),
+            exact('Relevantă', true, function (r) { return r.relevanta; }, 'da (true)'),
+            eticheta('Cerere relevantă'), tip('relevanta')
           ] }
         ];
       })()
