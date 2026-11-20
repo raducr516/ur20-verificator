@@ -222,6 +222,83 @@
     };
   }
 
+
+  /* ---------- validarea datelor brute din formular ---------- */
+  /* Câmpurile, în ordinea din pagină. tip: 'numar' sau 'alegere'. */
+  var CAMPURI_FORMULAR = [
+    { id: 'industrie', tip: 'alegere', cheie: 'industrie', variante: ['alimentar', 'alta'] },
+    { id: 'greutate', tip: 'numar', cheie: 'greutateKg', nume: 'greutatea găleții', maxim: 100, unitate: 'kg' },
+    { id: 'galeti-palet', tip: 'numar', cheie: 'galetiPePalet', nume: 'numărul de găleți pe palet', intreg: true },
+    { id: 'debit', tip: 'numar', cheie: 'debitGaletiMin', nume: 'debitul liniei', maxim: 60, unitate: 'găleți pe minut' },
+    { id: 'schimburi', tip: 'numar', cheie: 'schimburiPeZi', nume: 'numărul de schimburi pe zi' },
+    { id: 'ore', tip: 'numar', cheie: 'orePeSchimb', nume: 'orele pe schimb' },
+    { id: 'operatori', tip: 'numar', cheie: 'operatori', nume: 'numărul de operatori', intreg: true },
+    { id: 'maner', tip: 'alegere', cheie: 'maner', variante: ['da', 'nu'], bool: true },
+    { id: 'separator', tip: 'alegere', cheie: 'separator', variante: ['da', 'nu'], bool: true },
+    { id: 'spatiu', tip: 'alegere', cheie: 'spatiu', variante: ['da', 'nu', 'nu_stiu'] },
+    { id: 'gripper', tip: 'numar', cheie: 'greutateGripperKg', nume: 'greutatea gripperului', poateLipsi: true, poateFiZero: true }
+  ];
+
+  var MESAJE = {
+    text: 'Introduceți un număr, de exemplu 7,4 (fără litere).',
+    negativ: 'Valoarea nu poate fi negativă.',
+    zero: 'Valoarea trebuie să fie mai mare decât zero.',
+    schimburi: 'Schimburile pe zi sunt 1, 2 sau 3.',
+    intreg: 'Introduceți un număr întreg.',
+    orePeste12: 'Un schimb are cel mult 12 ore.',
+    alegere: 'Alegeți o variantă.'
+  };
+
+  /* Primește valorile brute (text) din formular, cu cheile = id-urile câmpurilor.
+     Întoarce { ok, erori: {id: mesaj}, avertismente: {id: mesaj}, valori } — valori este input-ul pentru evaluate(). */
+  function valideaza(brut) {
+    var b = brut || {};
+    var erori = {};
+    var avertismente = {};
+    var valori = {};
+
+    CAMPURI_FORMULAR.forEach(function (c) {
+      var text = String(b[c.id] == null ? '' : b[c.id]).trim();
+      if (c.tip === 'alegere') {
+        if (c.variante.indexOf(text) === -1) { erori[c.id] = MESAJE.alegere; return; }
+        valori[c.cheie] = c.bool ? text === 'da' : text;
+        return;
+      }
+      if (text === '') {
+        if (c.poateLipsi) { valori[c.cheie] = REFERINTA.gripperImplicitKg; return; }
+        erori[c.id] = 'Completați ' + c.nume + '.';
+        return;
+      }
+      var n = parseNumarRo(text);
+      if (!isFinite(n)) { erori[c.id] = MESAJE.text; return; }
+      if (n < 0) { erori[c.id] = MESAJE.negativ; return; }
+      if (n === 0 && !c.poateFiZero) { erori[c.id] = MESAJE.zero; return; }
+      if (c.id === 'schimburi' && (n !== Math.floor(n) || n < 1 || n > 3)) { erori[c.id] = MESAJE.schimburi; return; }
+      if (c.intreg && n !== Math.floor(n)) { erori[c.id] = MESAJE.intreg; return; }
+      if (c.id === 'ore' && n > 12) { erori[c.id] = MESAJE.orePeste12; return; }
+      if (c.maxim && n > c.maxim) { erori[c.id] = 'Verificați valoarea și unitatea (' + c.unitate + ').'; return; }
+      valori[c.cheie] = n;
+    });
+
+    // Program: schimburi × ore nu pot depăși 24 de ore pe zi.
+    if (!erori.schimburi && !erori.ore && valori.schimburiPeZi * valori.orePeSchimb > 24 + EPS) {
+      erori.ore = fmt(valori.schimburiPeZi) + (valori.schimburiPeZi === 1 ? ' schimb' : ' schimburi') + ' × ' +
+        fmt(valori.orePeSchimb) + ' ore depășesc 24 de ore pe zi.';
+      delete valori.orePeSchimb;
+    }
+
+    // Capacitate: avertisment, nu blochează (verdictul „În afara aplicației de referință” se afișează în continuare).
+    if (!erori.greutate && !erori.gripper) {
+      var sarcina = valori.greutateKg + valori.greutateGripperKg;
+      if (sarcina > REFERINTA.capacitateKg + EPS) {
+        avertismente.greutate = fmt(sarcina) + ' kg cu gripperul depășesc capacitatea UR20 de ' +
+          fmt(REFERINTA.capacitateKg) + ' kg: linia iese din aplicația de referință.';
+      }
+    }
+
+    return { ok: Object.keys(erori).length === 0, erori: erori, avertismente: avertismente, valori: valori };
+  }
+
   var api = {
     REFERINTA: REFERINTA,
     VERDICT_TEXT: VERDICT_TEXT,
@@ -229,7 +306,9 @@
     debitReferinta: debitReferinta,
     evaluate: evaluate,
     locatieTechCon: locatieTechCon,
-    calificaCererea: calificaCererea
+    calificaCererea: calificaCererea,
+    valideaza: valideaza,
+    CAMPURI_FORMULAR: CAMPURI_FORMULAR
   };
 
   root.UR20Logic = api;

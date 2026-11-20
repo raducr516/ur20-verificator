@@ -76,45 +76,65 @@
     });
   }
 
-  /* Singurul loc în care valorile brute se convertesc în numere și se validează (minim). */
+  /* Conversia și validarea se fac în logic.js (UR20Logic.valideaza); aici doar adaptăm rezultatul. */
   function convertesteFormular(raw) {
-    var input = {};
-    var erori = {};
-    NUMERICE.forEach(function (c) {
-      var text = String(raw[c.id] == null ? '' : raw[c.id]).trim();
-      if (c.id === 'gripper' && text === '') { input[c.cheie] = L.REFERINTA.gripperImplicitKg; return; }
-      if (text === '') { erori[c.id] = 'Completați ' + c.nume + '.'; return; }
-      var n = L.parseNumarRo(text);
-      if (!isFinite(n)) { erori[c.id] = 'Introduceți un număr (ex. 7,4).'; return; }
-      if (n <= 0 && c.id !== 'gripper') { erori[c.id] = 'Valoarea trebuie să fie mai mare decât zero.'; return; }
-      if (n < 0) { erori[c.id] = 'Valoarea nu poate fi negativă.'; return; }
-      input[c.cheie] = n;
-    });
-    if (!raw.industrie) erori.industrie = 'Alegeți tipul de produs.'; else input.industrie = raw.industrie;
-    if (!raw.maner) erori.maner = 'Alegeți Da sau Nu.'; else input.maner = raw.maner === 'da';
-    if (!raw.separator) erori.separator = 'Alegeți Da sau Nu.'; else input.separator = raw.separator === 'da';
-    if (!raw.spatiu) erori.spatiu = 'Alegeți un răspuns.'; else input.spatiu = raw.spatiu;
-    return { input: input, erori: erori, valid: Object.keys(erori).length === 0 };
+    var v = L.valideaza(raw);
+    return { input: v.valori, erori: v.erori, avertismente: v.avertismente, valid: v.ok };
   }
 
-  /* Singurul loc în care se afișează erorile pe câmp. */
-  function afiseazaErori(erori) {
-    erori = erori || {};
-    TOATE_ERORILE.forEach(function (id) {
-      var el = $('err-' + id);
-      if (el) el.textContent = erori[id] || '';
-      var camp = $(id);
-      if (camp && camp.tagName === 'INPUT') {
-        if (erori[id]) camp.setAttribute('aria-invalid', 'true'); else camp.removeAttribute('aria-invalid');
-      }
+  /* Ordinea câmpurilor în pagină (pentru focus pe primul câmp greșit). */
+  var ORDINE = L.CAMPURI_FORMULAR.map(function (c) { return c.id; });
+
+  var ICO_EROARE = '<svg class="ico-mesaj" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M12 6.5v7" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="17.6" r="1.5" fill="#fff"/></svg>';
+  var ICO_ATENTIE = '<svg class="ico-mesaj" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8L23 21.5H1z" fill="currentColor"/><path d="M12 8.5v6.2" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="18" r="1.5" fill="#fff"/></svg>';
+
+  function campuriRadio(id) { return document.querySelectorAll('input[name="' + id + '"]'); }
+
+  /* Pune / șterge mesajul unui câmp. tip: 'eroare', 'avertisment' sau null. */
+  function seteazaMesaj(id, tip, mesaj) {
+    var el = $('err-' + id);
+    if (!el) return;
+    if (!tip) {
+      el.innerHTML = '';
+      el.className = 'eroare';
+    } else {
+      el.className = tip === 'eroare' ? 'eroare' : 'eroare avertisment';
+      el.innerHTML = (tip === 'eroare' ? ICO_EROARE : ICO_ATENTIE + '<strong>Atenție:</strong> ') + '<span>' + esc(mesaj) + '</span>';
+    }
+    var grup = el.parentElement;
+    if (grup) grup.classList.toggle('are-eroare', tip === 'eroare');
+    var campuri = $(id) ? [$(id)] : Array.prototype.slice.call(campuriRadio(id));
+    campuri.forEach(function (c) {
+      if (tip === 'eroare') c.setAttribute('aria-invalid', 'true'); else c.removeAttribute('aria-invalid');
     });
-    var n = Object.keys(erori).length;
-    $('err-form').textContent = n ? 'Verificați ' + (n === 1 ? 'câmpul marcat' : 'cele ' + n + ' câmpuri marcate') + ' mai sus.' : '';
+  }
+
+  function actualizeazaRezumat() {
+    var n = ORDINE.filter(function (id) { var el = $('err-' + id); return el && el.innerHTML && !el.classList.contains('avertisment'); }).length;
+    var text = n ? 'Corectați ' + (n === 1 ? '1 câmp' : n + ' câmpuri') + ' pentru a vedea rezultatul.' : '';
+    $('rezumat-erori').innerHTML = n ? ICO_EROARE + '<span>' + text + '</span>' : '';
+    $('rezumat-erori').hidden = !n;
+    $('err-form').textContent = text;
+    return n;
+  }
+
+  /* Singurul loc în care se afișează erorile și avertismentele pe câmp. */
+  function afiseazaErori(erori, avertismente) {
+    erori = erori || {};
+    avertismente = avertismente || {};
+    ORDINE.forEach(function (id) {
+      if (erori[id]) seteazaMesaj(id, 'eroare', erori[id]);
+      else if (avertismente[id]) seteazaMesaj(id, 'avertisment', avertismente[id]);
+      else seteazaMesaj(id, null);
+    });
+    var n = actualizeazaRezumat();
     if (erori.gripper) $('ipoteze').open = true;
     if (n) {
-      var primul = TOATE_ERORILE.filter(function (id) { return erori[id]; })[0];
-      var tinta = $(primul) || document.querySelector('input[name="' + primul + '"]');
-      if (tinta) tinta.focus();
+      var primul = ORDINE.filter(function (id) { return erori[id]; })[0];
+      var tinta = $(primul) || campuriRadio(primul)[0];
+      var grup = $('err-' + primul) && $('err-' + primul).parentElement;
+      if (grup && grup.scrollIntoView) grup.scrollIntoView({ block: 'center' });
+      if (tinta) { try { tinta.focus({ preventScroll: true }); } catch (e) { tinta.focus(); } }
     }
   }
 
@@ -187,12 +207,12 @@
   }
 
   function laVerifica(ev) {
-    ev.preventDefault();
+    if (ev) ev.preventDefault();
     var raw = citesteFormular();
     scrieStocare(CHEIE_FORMULAR, raw);
     var conv = convertesteFormular(raw);
-    afiseazaErori(conv.erori);
-    if (!conv.valid) return;
+    afiseazaErori(conv.erori, conv.avertismente);
+    if (!conv.valid) { stare.input = null; stare.rezultat = null; return; }
     stare.raw = raw;
     stare.input = conv.input;
     stare.rezultat = L.evaluate(conv.input);
@@ -298,6 +318,30 @@
     arataEcran('linie');
   }
 
+  /* ---------- exemple pentru demonstrație (date fictive) ---------- */
+  var EXEMPLE = {
+    normal: {
+      industrie: 'alimentar', greutate: '13', 'galeti-palet': '44', debit: '6', schimburi: '3', ore: '8',
+      operatori: '2', maner: 'da', separator: 'da', spatiu: 'da', gripper: '5'
+    },
+    gresit: {
+      industrie: 'alimentar', greutate: '25', 'galeti-palet': '0', debit: 'repede', schimburi: '4', ore: '',
+      operatori: '-2', maner: 'da', separator: 'da', spatiu: 'da', gripper: '5'
+    }
+  };
+
+  function ruleazaExemplu(nume) {
+    stare.ultimaCerere = null;
+    completeazaFormular(EXEMPLE[nume]);
+    laVerifica(null);
+  }
+
+  function completeazaContactFictiv() {
+    $('firma').value = 'Fabrica Demo SRL';
+    $('rol').value = 'Director de producție / de fabrică';
+    $('judet').value = 'Ilfov';
+  }
+
   /* ---------- pornire ---------- */
   function init() {
     var sel = $('judet');
@@ -320,16 +364,18 @@
     $('btn-completeaza').addEventListener('click', laCompleteaza);
     $('btn-verificare-noua').addEventListener('click', laVerificareNoua);
 
-    /* Ștergem eroarea unui câmp de îndată ce utilizatorul îl modifică. */
-    $('form-linie').addEventListener('input', function (ev) {
+    $('btn-exemplu-normal').addEventListener('click', function () { ruleazaExemplu('normal'); });
+    $('btn-exemplu-gresit').addEventListener('click', function () { ruleazaExemplu('gresit'); });
+    $('btn-date-fictive').addEventListener('click', completeazaContactFictiv);
+
+    /* Ștergem mesajul unui câmp de îndată ce utilizatorul îl modifică; rezumatul se actualizează. */
+    function laModificare(ev) {
       var t = ev.target, id = t.type === 'radio' ? t.name : t.id;
       var el = $('err-' + id);
-      if (el && el.textContent) { el.textContent = ''; t.removeAttribute('aria-invalid'); }
-    });
-    $('form-linie').addEventListener('change', function (ev) {
-      var t = ev.target;
-      if (t.type === 'radio') { var el = $('err-' + t.name); if (el) el.textContent = ''; }
-    });
+      if (el && el.innerHTML) { seteazaMesaj(id, null); actualizeazaRezumat(); }
+    }
+    $('form-linie').addEventListener('input', laModificare);
+    $('form-linie').addEventListener('change', laModificare);
   }
 
   /* Punct de extindere pentru pasul următor (exemple, validări detaliate). */
@@ -339,6 +385,8 @@
     convertesteFormular: convertesteFormular,
     afiseazaErori: afiseazaErori,
     arataEcran: arataEcran,
+    ruleazaExemplu: ruleazaExemplu,
+    EXEMPLE: EXEMPLE,
     JUDETE: JUDETE
   };
 

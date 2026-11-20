@@ -33,6 +33,16 @@
     <h2 id="titlu-linie" tabindex="-1">Linia dvs. de umplere</h2>
     <p class="indicatie">Toate câmpurile sunt obligatorii. Puteți folosi virgula zecimală (ex. 7,4).</p>
 
+    <div id="zona-exemple" class="zona-exemple">
+      <p class="exemple-text" id="exemple-text">Pentru demonstrație: completează formularul cu date fictive.</p>
+      <div class="exemple-butoane">
+        <button type="button" class="btn btn-mic" id="btn-exemplu-normal" aria-describedby="exemple-text">Exemplu: caz normal</button>
+        <button type="button" class="btn btn-mic" id="btn-exemplu-gresit" aria-describedby="exemple-text">Exemplu: date greșite</button>
+      </div>
+    </div>
+
+    <div id="rezumat-erori" class="rezumat-erori" role="alert" hidden></div>
+
     <form id="form-linie" novalidate>
       <fieldset class="camp" id="camp-industrie">
         <legend>1. Tip produs / industrie</legend>
@@ -121,8 +131,6 @@
         </div>
       </details>
 
-      <div id="zona-exemple"></div>
-
       <p class="eroare eroare-form" id="err-form" aria-live="polite"></p>
       <button type="submit" class="btn btn-principal" id="btn-verifica">Verifică linia</button>
     </form>
@@ -171,6 +179,8 @@
     <h2 id="titlu-cerere" tabindex="-1">Cerere de evaluare tehnică</h2>
     <p class="demo demo-mic" role="note"><span class="demo-semn" aria-hidden="true">!</span> Demo: folosiți date fictive</p>
     <p class="indicatie">Cererea se salvează doar în acest browser. Dacă lipsește ceva, o salvăm oricum și o marcăm „Cerere incompletă”.</p>
+
+    <button type="button" class="btn btn-mic btn-fictive" id="btn-date-fictive">Completează cu date fictive</button>
 
     <form id="form-cerere" novalidate>
       <div class="camp">
