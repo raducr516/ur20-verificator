@@ -186,7 +186,9 @@
       card(fmt(c.paletiPeOra), 'paleți/oră', 'paleți compleți pe oră'),
       card(fmt(c.minuteIntrePaleti), 'min', 'între două schimbări de palet (manuale)'),
       card(fmt(c.sarcinaTotalaKg) + ' / ' + fmt(c.capacitateKg), 'kg', 'sarcina totală (găleată + gripper ' + fmt(input.greutateGripperKg) + ' kg, ipoteză) față de capacitatea nominală UR20', true, bara(c.sarcinaTotalaKg, c.capacitateKg)),
-      card(fmt(input.debitGaletiMin) + ' / ' + fmt(c.debitReferinta), 'găleți/min', 'debitul liniei dvs. față de valoarea testată la PURATOS pentru acest format (rezultat de test, nu garanție)', true, bara(input.debitGaletiMin, c.debitReferinta))
+      card(fmt(input.debitGaletiMin) + ' / ' + fmt(c.debitReferinta), 'găleți/min', (c.formatTestatExact
+        ? 'debitul liniei dvs. față de valoarea testată la PURATOS pentru găleata de ' + fmt(c.formatReferintaKg) + ' kg (rezultat de test, nu garanție)'
+        : 'debitul liniei dvs. față de reperul testat la PURATOS pentru găleata de ' + fmt(c.formatReferintaKg) + ' kg, nu pentru formatul dvs. (rezultat de test, nu garanție)'), true, bara(input.debitGaletiMin, c.debitReferinta))
     ].join('');
   }
 
@@ -267,7 +269,7 @@
         rand('Paleți pe oră', fmt(c.paletiPeOra)) +
         rand('Minute între două schimbări de palet', fmt(c.minuteIntrePaleti)) +
         rand('Sarcină totală / capacitate UR20', fmt(c.sarcinaTotalaKg) + ' / ' + fmt(c.capacitateKg) + ' kg') +
-        rand('Debit linie / valoare testată', fmt(i.debitGaletiMin) + ' / ' + fmt(c.debitReferinta) + ' găleți/min') +
+        rand('Debit linie / valoare testată', fmt(i.debitGaletiMin) + ' / ' + fmt(c.debitReferinta) + ' găleți/min (testat la PURATOS pentru găleata de ' + fmt(c.formatReferintaKg) + ' kg' + (c.formatTestatExact ? '' : ', nu pentru formatul dvs.') + ')') +
       '</tbody></table></div>' +
       '<p class="fix">Valorile de referință sunt rezultate de test din aplicația PURATOS, nu garanții pentru linia dumneavoastră.</p>';
   }

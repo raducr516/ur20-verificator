@@ -80,27 +80,46 @@
       });
     }
 
+    var formatRef = g <= REFERINTA.greutateMinTestataKg + EPS
+      ? REFERINTA.greutateMinTestataKg : REFERINTA.greutateMaxTestataKg;
+    var formatExact = Math.abs(g - REFERINTA.greutateMinTestataKg) <= EPS ||
+      Math.abs(g - REFERINTA.greutateMaxTestataKg) <= EPS;
+    var galeataRef = 'găleata de ' + fmt(formatRef) + ' kg';
+
     var blocaj;
     if (debit > ref + EPS) {
       blocaj = 'peste_referinta';
       validare = true;
       motive.push({
         cod: 'debit_peste_referinta',
-        text: 'Debitul liniei (' + fmt(debit) + ' găleți/min) depășește valoarea testată pentru acest format (' + fmt(ref) + ' găleți/min).'
+        text: formatExact
+          ? 'Debitul liniei (' + fmt(debit) + ' găleți/min) depășește valoarea testată la PURATOS pentru ' + galeataRef + ' (' + fmt(ref) + ' găleți/min).'
+          : 'Debitul liniei (' + fmt(debit) + ' găleți/min) depășește reperul de ' + fmt(ref) + ' găleți/min, testat la PURATOS pentru ' + galeataRef +
+            ', nu pentru formatul dvs.: comparația este orientativă și se validează la evaluarea tehnică.'
       });
     } else if (debit < ref - EPS) {
       blocaj = 'amonte';
-      note.push({
-        cod: 'blocaj_amonte',
-        text: 'Linia dvs. (' + fmt(debit) + ' găleți/min) este mai lentă decât valoarea testată (' + fmt(ref) +
-          ' găleți/min): limita este în amonte, la umplere. Robotul nu crește debitul fabricii.'
-      });
+      if (!inAfara) {
+        note.push({
+          cod: 'blocaj_amonte',
+          text: formatExact
+            ? 'Linia dvs. (' + fmt(debit) + ' găleți/min) este mai lentă decât valoarea testată la PURATOS pentru ' + galeataRef + ' (' + fmt(ref) +
+              ' găleți/min): limita este în amonte, la umplere. Robotul nu crește debitul fabricii.'
+            : 'Linia dvs. (' + fmt(debit) + ' găleți/min) este sub reperul de ' + fmt(ref) + ' găleți/min, testat la PURATOS pentru ' + galeataRef +
+              ', nu pentru formatul dvs.: comparația este orientativă. Dacă se confirmă la evaluarea tehnică, limita este în amonte, la umplere, iar robotul nu crește debitul fabricii.'
+        });
+      }
     } else {
       blocaj = 'la_referinta';
-      note.push({
-        cod: 'debit_la_referinta',
-        text: 'Debitul liniei este egal cu valoarea testată pentru acest format (' + fmt(ref) + ' găleți/min): nu există rezervă de ritm; se verifică la evaluarea tehnică.'
-      });
+      if (!inAfara) {
+        note.push({
+          cod: 'debit_la_referinta',
+          text: formatExact
+            ? 'Debitul liniei este egal cu valoarea testată la PURATOS pentru ' + galeataRef + ' (' + fmt(ref) + ' găleți/min): nu există rezervă de ritm; se verifică la evaluarea tehnică.'
+            : 'Debitul liniei este egal cu reperul de ' + fmt(ref) + ' găleți/min, testat la PURATOS pentru ' + galeataRef +
+              ', nu pentru formatul dvs.: comparația este orientativă; se verifică la evaluarea tehnică.'
+        });
+      }
     }
 
     if (i.maner === false) {
@@ -148,6 +167,8 @@
       sarcinaTotalaKg: sarcina,
       capacitateKg: REFERINTA.capacitateKg,
       debitReferinta: ref,
+      formatReferintaKg: formatRef,
+      formatTestatExact: formatExact,
       kgPeSchimb: kgPeSchimb,
       tonePeSchimb: kgPeSchimb / 1000,
       kgPeZi: kgPeSchimb * i.schimburiPeZi,
