@@ -67,6 +67,12 @@ a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-r
 }
 .demo-mic { margin-bottom: 10px; }
 
+/* Pe ecranele de după formular, antetul se scurtează (subtitlul e doar pentru primul ecran). */
+body:has(#ecran-linie[hidden]) .subtitlu { display: none; }
+/* Pastila Demo din antet: contur chihlimbar pe fundal închis, nu pastilă plină. */
+.antet .demo { background: transparent; color: #ffd98a; border-color: #e0ad3e; }
+.antet .demo .demo-semn { background: #ffd98a; color: var(--accent); }
+
 /* Indicator pași */
 .pasi ol { list-style: none; display: flex; gap: 6px; margin: 14px auto 2px; padding: 0; }
 .pasi li {
@@ -114,7 +120,7 @@ select {
 }
 input[type="text"]:focus, select:focus { outline: 3px solid rgba(11, 92, 173, .3); outline-offset: 0; border-color: var(--actiune); }
 input[aria-invalid="true"] { border-color: var(--eroare); box-shadow: inset 0 0 0 1px var(--eroare); }
-input[aria-invalid="true"]:focus { outline-color: rgba(179, 38, 30, .25); }
+input[aria-invalid="true"]:focus { outline-color: rgba(179, 38, 30, .25); border-color: var(--eroare); }
 
 .cu-unitate { display: flex; align-items: stretch; }
 .cu-unitate input:focus { position: relative; z-index: 1; }
@@ -185,6 +191,10 @@ input[aria-invalid="true"]:focus { outline-color: rgba(179, 38, 30, .25); }
   background: #fff; color: var(--actiune); border: 1px solid var(--actiune);
 }
 @media (hover: hover) and (pointer: fine) { .btn.btn-mic:hover { background: var(--actiune-fundal); } }
+/* O singură acțiune evidentă: exemplul normal e buton plin, cel greșit rămâne conturat. */
+#btn-exemplu-normal.btn:not(:disabled) { background: var(--actiune); color: #fff; border-color: var(--actiune); box-shadow: 0 1px 2px rgba(11, 60, 110, .25); }
+#btn-exemplu-normal.btn:not(:disabled):active { background: var(--actiune-hover); border-color: var(--actiune-hover); }
+@media (hover: hover) and (pointer: fine) { #btn-exemplu-normal.btn:not(:disabled):hover { background: var(--actiune-hover); border-color: var(--actiune-hover); } }
 .btn.btn-fictive { width: auto; margin: 0 0 18px; }
 .eroare-form { margin: 0 0 10px; }
 
@@ -230,7 +240,7 @@ input[aria-invalid="true"]:focus { outline-color: rgba(179, 38, 30, .25); }
 }
 .verdict .pictograma { flex: none; width: 36px; height: 36px; }
 .verdict .eticheta { margin: 0 0 1px; font-size: .8125rem; font-weight: 600; opacity: .85; }
-.verdict .text { margin: 0; font-size: 1.25rem; font-weight: 750; line-height: 1.22; letter-spacing: -0.01em; }
+.verdict .text { margin: 0; font-size: 1.5rem; font-weight: 750; line-height: 1.2; letter-spacing: -0.01em; }
 .verdict-potrivit { background: var(--ok-fundal); border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); color: var(--ok); }
 .verdict-validare { background: var(--atentie-fundal); border-color: var(--atentie-linie); box-shadow: inset 0 0 0 1px var(--atentie-linie); color: var(--atentie); }
 .verdict-in_afara { background: var(--stop-fundal); border-color: var(--stop); box-shadow: inset 0 0 0 1px var(--stop); color: var(--stop); }
@@ -266,6 +276,18 @@ input[aria-invalid="true"]:focus { outline-color: rgba(179, 38, 30, .25); }
 .referinta { background: #f2f6fb; border: 1px solid #c3d4e6; border-radius: var(--raza); padding: 14px; }
 .fix { margin: 10px 0 0; padding-top: 10px; font-size: .9375rem; line-height: 1.45; border-top: 1px solid #d3e0ed; }
 .referinta .lista-ref + .fix { margin-top: 12px; }
+
+/* Rezultat: acțiunile urcă imediat sub verdict (ordine vizuală; DOM-ul rămâne neschimbat).
+   În flex marginile nu se contopesc, deci sunt setate explicit; [hidden] rămâne display:none !important. */
+#ecran-rezultat:not([hidden]) { display: flex; flex-direction: column; }
+#ecran-rezultat > * { order: 0; }
+#ecran-rezultat > #titlu-rezultat { order: -3; margin-bottom: 0; font-size: 1.125rem; }
+#ecran-rezultat > .verdict { order: -2; margin: 12px 0 0; }
+#ecran-rezultat > .actiuni { order: -1; margin-top: 16px; padding-bottom: 8px; }
+#ecran-rezultat > .bloc { margin-top: 24px; }
+#ecran-rezultat .bloc h3 .eticheta-ipoteza, #ecran-rezultat .bloc h3 .eticheta-fapt {
+  display: table; margin: 6px 0 0; font-size: .8125rem; vertical-align: baseline;
+}
 
 /* Fișa */
 .fisa { margin-top: 12px; }
