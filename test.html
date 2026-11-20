@@ -14,28 +14,30 @@
     background: var(--suprafata); font-size: 1.05rem;
   }
   .rezumat strong { display: block; font-size: 1.2rem; line-height: 1.3; }
-  .rezumat.ok { border-color: var(--ok); background: var(--ok-fundal); color: var(--ok); }
-  .rezumat.picat { border-color: var(--stop); background: var(--stop-fundal); color: var(--stop); }
+  .rezumat { border-width: 1px; }
+  .rezumat.ok { box-shadow: inset 0 0 0 1px var(--ok); border-color: var(--ok); background: var(--ok-fundal); color: var(--ok); }
+  .rezumat.picat { box-shadow: inset 0 0 0 1px var(--stop); border-color: var(--stop); background: var(--stop-fundal); color: var(--stop); }
   .rezumat .detaliu { color: var(--text); font-size: .92rem; margin: 2px 0 0; }
   .ico { flex: none; width: 28px; height: 28px; }
   .ico-mic { flex: none; width: 20px; height: 20px; }
   .grup { margin: 26px 0 0; }
-  .grup > h2 { font-size: 1.15rem; margin: 0 0 4px; }
+  .grup > h2 { font-size: 1.1875rem; margin: 0 0 4px; letter-spacing: -0.01em; }
   .grup > p { margin: 0 0 10px; color: var(--text-slab); font-size: .92rem; }
   .teste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
   .test {
-    background: var(--suprafata); border: 1px solid var(--linie); border-left: 5px solid var(--ok);
-    border-radius: var(--raza, 10px); padding: 12px 14px; min-width: 0;
+    background: var(--suprafata); border: 1px solid var(--linie);
+    border-radius: var(--raza, 10px); padding: 12px 14px; min-width: 0; box-shadow: var(--umbra);
   }
-  .test.picat { border-left-color: var(--stop); background: var(--stop-fundal); }
+  .test.picat { border-color: var(--stop); box-shadow: inset 0 0 0 1px var(--stop); background: var(--stop-fundal); }
   .test-cap { display: flex; gap: 8px; align-items: flex-start; }
-  .test-cap h3 { margin: 0; font-size: 1rem; line-height: 1.35; flex: 1; min-width: 0; }
+  .test-cap h3 { margin: 0; font-size: 1rem; line-height: 1.35; flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
+  .verificare dd { font-variant-numeric: tabular-nums; }
   .stare { flex: none; font-size: .78rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
   .stare.ok { background: var(--ok-fundal); color: var(--ok); border: 1px solid var(--ok); }
   .stare.picat { background: var(--stop); color: #fff; }
   .intrare { margin: 4px 0 8px; font-size: .85rem; color: var(--text-slab); }
   .verificari { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-  .verificare { border-top: 1px dashed var(--linie); padding-top: 6px; font-size: .9rem; display: flex; gap: 6px; }
+  .verificare { border-top: 1px solid #e3e7eb; padding-top: 6px; font-size: .9rem; display: flex; gap: 6px; }
   .verificare .ico-mic { margin-top: 1px; }
   .verificare.ok .ico-mic { color: var(--ok); }
   .verificare.picat .ico-mic { color: var(--stop); }
@@ -44,7 +46,7 @@
   .verificare dt { color: var(--text-slab); }
   .verificare dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
   .verificare.picat dd.obtinut { color: var(--stop); font-weight: 700; }
-  .inapoi { display: inline-block; margin: 6px 0 0; color: #fff; font-weight: 600; }
+  .inapoi { display: inline-block; margin: 6px 0 0; padding: 8px 0; color: #fff; font-weight: 600; }
   .antet a.inapoi:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
   .avertizare { margin: 0; color: #dbe2e9; font-size: .95rem; }
   main.continut { padding-bottom: 24px; }
