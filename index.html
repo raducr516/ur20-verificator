@@ -2,24 +2,222 @@
 <html lang="ro">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Verificator UR20 — pre-evaluare paletizare găleți</title>
-<style>
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f6f7f9;color:#1b1f24;line-height:1.5}
-  main{max-width:36rem;margin:0 auto;padding:24px 16px}
-  h1{font-size:1.4rem;margin:0 0 12px}
-  .demo{background:#fff4d6;border:1px solid #e0b400;border-radius:8px;padding:10px 12px;font-weight:600}
-  .wip{color:#5a6470;font-size:.95rem}
-  button{width:100%;padding:14px;font-size:1rem;border:0;border-radius:8px;background:#9aa4ae;color:#fff;margin-top:16px}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a36">
+<meta name="description" content="Pre-evaluare în 2 minute: se compară linia dvs. de umplere a găleților cu aplicația de referință cu robot UR20.">
+<title>Verificator UR20</title>
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
-<main>
-  <h1>Verificator UR20 — pre-evaluare paletizare găleți</h1>
-  <p class="demo">Demo: nu introduceți date reale</p>
-  <p>Instrument pentru directorii de producție din fabricile alimentare care umplu găleți de 5–15 kg: în 2 minute verificați dacă linia dumneavoastră se potrivește cu o celulă de paletizare cu robot UR20 și trimiteți o cerere de evaluare tehnică.</p>
-  <p class="wip">Aplicația este în lucru.</p>
-  <button type="button" disabled>Solicită evaluarea tehnică</button>
+<header class="antet">
+  <div class="continut">
+    <p class="supratitlu">Pre-evaluare paletizare găleți</p>
+    <h1>Verificator UR20</h1>
+    <p class="subtitlu">Aflați în 2 minute dacă linia dumneavoastră de găleți se compară cu aplicația de referință cu robot UR20 și solicitați o evaluare tehnică.</p>
+    <p class="demo" role="note"><span class="demo-semn" aria-hidden="true">!</span> Demo: nu introduceți date reale</p>
+  </div>
+</header>
+
+<nav class="pasi continut" aria-label="Pașii verificării">
+  <ol>
+    <li id="pas-ind-1" class="activ" aria-current="step"><span class="nr">1</span> Linia dvs.</li>
+    <li id="pas-ind-2"><span class="nr">2</span> Rezultat</li>
+    <li id="pas-ind-3"><span class="nr">3</span> Cerere</li>
+  </ol>
+</nav>
+
+<main class="continut">
+
+  <!-- PAS 1: formular -->
+  <section id="ecran-linie" class="ecran" aria-labelledby="titlu-linie">
+    <h2 id="titlu-linie" tabindex="-1">Linia dvs. de umplere</h2>
+    <p class="indicatie">Toate câmpurile sunt obligatorii. Puteți folosi virgula zecimală (ex. 7,4).</p>
+
+    <form id="form-linie" novalidate>
+      <fieldset class="camp" id="camp-industrie">
+        <legend>1. Tip produs / industrie</legend>
+        <label class="optiune"><input type="radio" name="industrie" id="industrie-alimentar" value="alimentar"> <span>Alimentar (creme, umpluturi, gemuri, glazuri, sosuri, lactate)</span></label>
+        <label class="optiune"><input type="radio" name="industrie" id="industrie-alta" value="alta"> <span>Altă industrie (ex. vopsele, chimice)</span></label>
+        <p class="eroare" id="err-industrie" aria-live="polite"></p>
+      </fieldset>
+
+      <div class="camp" id="camp-greutate">
+        <label for="greutate">2. Greutatea găleții pline</label>
+        <div class="cu-unitate"><input type="text" id="greutate" name="greutate" inputmode="decimal" autocomplete="off" placeholder="ex. 13" aria-describedby="err-greutate"><span class="unitate">kg</span></div>
+        <p class="eroare" id="err-greutate" aria-live="polite"></p>
+      </div>
+
+      <div class="camp" id="camp-galeti-palet">
+        <label for="galeti-palet">3. Găleți pe palet</label>
+        <div class="cu-unitate"><input type="text" id="galeti-palet" name="galeti-palet" inputmode="decimal" autocomplete="off" placeholder="ex. 44" aria-describedby="err-galeti-palet"><span class="unitate">găleți</span></div>
+        <p class="eroare" id="err-galeti-palet" aria-live="polite"></p>
+      </div>
+
+      <div class="camp" id="camp-debit">
+        <label for="debit">4. Debitul liniei</label>
+        <div class="cu-unitate"><input type="text" id="debit" name="debit" inputmode="decimal" autocomplete="off" placeholder="ex. 6" aria-describedby="err-debit"><span class="unitate">găleți/min</span></div>
+        <p class="eroare" id="err-debit" aria-live="polite"></p>
+      </div>
+
+      <fieldset class="camp" id="camp-program">
+        <legend>5. Program de lucru</legend>
+        <div class="doua">
+          <div>
+            <label for="schimburi" class="sub">Schimburi pe zi (1–3)</label>
+            <input type="text" id="schimburi" name="schimburi" inputmode="numeric" autocomplete="off" placeholder="ex. 3" aria-describedby="err-schimburi">
+            <p class="eroare" id="err-schimburi" aria-live="polite"></p>
+          </div>
+          <div>
+            <label for="ore" class="sub">Ore pe schimb</label>
+            <input type="text" id="ore" name="ore" inputmode="decimal" autocomplete="off" placeholder="ex. 8" aria-describedby="err-ore">
+            <p class="eroare" id="err-ore" aria-live="polite"></p>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="camp" id="camp-operatori">
+        <label for="operatori">6. Operatori la paletizare, pe schimb</label>
+        <div class="cu-unitate"><input type="text" id="operatori" name="operatori" inputmode="numeric" autocomplete="off" placeholder="ex. 2" aria-describedby="err-operatori"><span class="unitate">persoane</span></div>
+        <p class="eroare" id="err-operatori" aria-live="polite"></p>
+      </div>
+
+      <fieldset class="camp" id="camp-ambalaj">
+        <legend>7. Ambalaj</legend>
+        <div class="intrebare">
+          <p class="sub" id="lbl-maner">Găleata are mâner?</p>
+          <div class="segmente" role="radiogroup" aria-labelledby="lbl-maner">
+            <label class="segment"><input type="radio" name="maner" id="maner-da" value="da"><span>Da</span></label>
+            <label class="segment"><input type="radio" name="maner" id="maner-nu" value="nu"><span>Nu</span></label>
+          </div>
+          <p class="eroare" id="err-maner" aria-live="polite"></p>
+        </div>
+        <div class="intrebare">
+          <p class="sub" id="lbl-separator">Folosiți separatoare între straturi?</p>
+          <div class="segmente" role="radiogroup" aria-labelledby="lbl-separator">
+            <label class="segment"><input type="radio" name="separator" id="separator-da" value="da"><span>Da</span></label>
+            <label class="segment"><input type="radio" name="separator" id="separator-nu" value="nu"><span>Nu</span></label>
+          </div>
+          <p class="eroare" id="err-separator" aria-live="polite"></p>
+        </div>
+      </fieldset>
+
+      <fieldset class="camp" id="camp-spatiu">
+        <legend>8. Există spațiu liber la capătul liniei pentru celulă?</legend>
+        <div class="segmente trei">
+          <label class="segment"><input type="radio" name="spatiu" id="spatiu-da" value="da"><span>Da</span></label>
+          <label class="segment"><input type="radio" name="spatiu" id="spatiu-nu" value="nu"><span>Nu</span></label>
+          <label class="segment"><input type="radio" name="spatiu" id="spatiu-nu_stiu" value="nu_stiu"><span>Nu știu</span></label>
+        </div>
+        <p class="eroare" id="err-spatiu" aria-live="polite"></p>
+      </fieldset>
+
+      <details class="ipoteze" id="ipoteze">
+        <summary>Ipoteze de calcul</summary>
+        <div class="camp" id="camp-gripper">
+          <label for="gripper">Greutatea gripperului (ipoteză, editabilă)</label>
+          <div class="cu-unitate"><input type="text" id="gripper" name="gripper" inputmode="decimal" autocomplete="off" value="5" aria-describedby="err-gripper nota-gripper"><span class="unitate">kg</span></div>
+          <p class="eroare" id="err-gripper" aria-live="polite"></p>
+          <p class="mic" id="nota-gripper">Sarcina totală = greutatea găleții + gripperul; o găleată pe ciclu. Capacitatea UR20 folosită: 20 kg (sarcina nominală din fișa tehnică Universal Robots).</p>
+        </div>
+      </details>
+
+      <div id="zona-exemple"></div>
+
+      <p class="eroare eroare-form" id="err-form" aria-live="polite"></p>
+      <button type="submit" class="btn btn-principal" id="btn-verifica">Verifică linia</button>
+    </form>
+  </section>
+
+  <!-- PAS 2: rezultat -->
+  <section id="ecran-rezultat" class="ecran" aria-labelledby="titlu-rezultat" hidden>
+    <h2 id="titlu-rezultat" tabindex="-1">Rezultatul pre-evaluării</h2>
+
+    <div id="verdict" class="verdict" role="status"></div>
+
+    <div id="bloc-motive" class="bloc" hidden>
+      <h3>De ce</h3>
+      <ul id="lista-motive" class="lista-motive"></ul>
+    </div>
+
+    <div id="bloc-note" class="bloc" hidden>
+      <h3>De reținut</h3>
+      <ul id="lista-note" class="lista-note"></ul>
+    </div>
+
+    <div class="bloc">
+      <h3>Calculele dvs. <span class="eticheta-ipoteza">pe baza datelor introduse și a ipotezelor</span></h3>
+      <div id="calcule" class="calcule"></div>
+    </div>
+
+    <div class="bloc referinta">
+      <h3>Referință PURATOS <span class="eticheta-fapt">rezultate de test</span></h3>
+      <ul class="lista-ref">
+        <li>Găleți de 5 kg și 13 kg; 100 de găleți de 5 kg sau 44 de 13 kg pe europalet.</li>
+        <li>Țintă: minimum 6 găleți/min. Testat: 8,6 găleți/min la 5 kg și 7,4 găleți/min la 13 kg.</li>
+      </ul>
+      <p class="fix">Valorile de referință sunt rezultate de test din aplicația PURATOS, nu garanții pentru linia dumneavoastră.</p>
+      <p class="fix">Rămân manuale: schimbarea paleților și amplasarea separatoarelor.</p>
+      <p class="fix">Celula nu acoperă: transportul paleților, înfolierea și expedierea.</p>
+    </div>
+
+    <div class="actiuni">
+      <button type="button" class="btn btn-principal" id="btn-solicita">Solicită evaluarea tehnică</button>
+      <button type="button" class="btn btn-secundar" id="btn-modifica">Modifică datele</button>
+    </div>
+  </section>
+
+  <!-- PAS 3: cerere -->
+  <section id="ecran-cerere" class="ecran" aria-labelledby="titlu-cerere" hidden>
+    <h2 id="titlu-cerere" tabindex="-1">Cerere de evaluare tehnică</h2>
+    <p class="demo demo-mic" role="note"><span class="demo-semn" aria-hidden="true">!</span> Demo: folosiți date fictive</p>
+    <p class="indicatie">Cererea se salvează doar în acest browser. Dacă lipsește ceva, o salvăm oricum și o marcăm „Cerere incompletă”.</p>
+
+    <form id="form-cerere" novalidate>
+      <div class="camp">
+        <label for="firma">Firma</label>
+        <input type="text" id="firma" name="firma" autocomplete="off" placeholder="ex. Fabrica Demo SRL">
+      </div>
+      <div class="camp">
+        <label for="rol">Rolul dvs.</label>
+        <select id="rol" name="rol">
+          <option value="">Alegeți rolul</option>
+          <option>Director de producție / de fabrică</option>
+          <option>Responsabil investiții</option>
+          <option>Responsabil SSM</option>
+          <option>Alt rol</option>
+        </select>
+      </div>
+      <div class="camp">
+        <label for="judet">Județul fabricii</label>
+        <select id="judet" name="judet">
+          <option value="">Alegeți județul</option>
+        </select>
+      </div>
+      <div class="actiuni">
+        <button type="submit" class="btn btn-principal" id="btn-trimite">Trimite cererea</button>
+        <button type="button" class="btn btn-secundar" id="btn-inapoi-rezultat">Înapoi la rezultat</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Confirmare: fișa de pre-evaluare -->
+  <section id="ecran-confirmare" class="ecran" aria-labelledby="titlu-confirmare" hidden>
+    <h2 id="titlu-confirmare" tabindex="-1">Fișa de pre-evaluare</h2>
+    <div id="fisa" class="fisa"></div>
+    <div class="actiuni">
+      <button type="button" class="btn btn-secundar" id="btn-completeaza" hidden>Completează datele</button>
+      <button type="button" class="btn btn-principal" id="btn-verificare-noua">Verificare nouă</button>
+    </div>
+  </section>
 </main>
+
+<footer class="subsol">
+  <div class="continut">
+    <p>Prototip realizat pentru un concurs studențesc. Nu este un instrument oficial Tech-Con, PURATOS sau Universal Robots. Date fictive; nimic nu se trimite nicăieri.</p>
+  </div>
+</footer>
+
+<script src="./logic.js"></script>
+<script src="./app.js"></script>
 </body>
 </html>
