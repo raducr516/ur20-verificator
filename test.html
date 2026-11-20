@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f2a36">
+<meta name="description" content="Teste automate pentru logica Verificatorului UR20: verdicte, limite, calcule, cerere, validare.">
+<title>Teste automate — Verificator UR20</title>
+<link rel="stylesheet" href="./style.css">
+<style>
+  .rezumat {
+    display: flex; align-items: flex-start; gap: 12px; margin: 16px 0 8px;
+    padding: 14px 16px; border-radius: var(--raza, 10px); border: 2px solid var(--linie);
+    background: var(--suprafata); font-size: 1.05rem;
+  }
+  .rezumat strong { display: block; font-size: 1.2rem; line-height: 1.3; }
+  .rezumat.ok { border-color: var(--ok); background: var(--ok-fundal); color: var(--ok); }
+  .rezumat.picat { border-color: var(--stop); background: var(--stop-fundal); color: var(--stop); }
+  .rezumat .detaliu { color: var(--text); font-size: .92rem; margin: 2px 0 0; }
+  .ico { flex: none; width: 28px; height: 28px; }
+  .ico-mic { flex: none; width: 20px; height: 20px; }
+  .grup { margin: 26px 0 0; }
+  .grup > h2 { font-size: 1.15rem; margin: 0 0 4px; }
+  .grup > p { margin: 0 0 10px; color: var(--text-slab); font-size: .92rem; }
+  .teste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .test {
+    background: var(--suprafata); border: 1px solid var(--linie); border-left: 5px solid var(--ok);
+    border-radius: var(--raza, 10px); padding: 12px 14px; min-width: 0;
+  }
+  .test.picat { border-left-color: var(--stop); background: var(--stop-fundal); }
+  .test-cap { display: flex; gap: 8px; align-items: flex-start; }
+  .test-cap h3 { margin: 0; font-size: 1rem; line-height: 1.35; flex: 1; min-width: 0; }
+  .stare { flex: none; font-size: .78rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .stare.ok { background: var(--ok-fundal); color: var(--ok); border: 1px solid var(--ok); }
+  .stare.picat { background: var(--stop); color: #fff; }
+  .intrare { margin: 4px 0 8px; font-size: .85rem; color: var(--text-slab); }
+  .verificari { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .verificare { border-top: 1px dashed var(--linie); padding-top: 6px; font-size: .9rem; display: flex; gap: 6px; }
+  .verificare .ico-mic { margin-top: 1px; }
+  .verificare.ok .ico-mic { color: var(--ok); }
+  .verificare.picat .ico-mic { color: var(--stop); }
+  .verificare dl { margin: 0; flex: 1; min-width: 0; display: grid; grid-template-columns: auto 1fr; column-gap: 8px; }
+  .verificare .ce { grid-column: 1 / -1; font-weight: 600; margin-bottom: 2px; }
+  .verificare dt { color: var(--text-slab); }
+  .verificare dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .verificare.picat dd.obtinut { color: var(--stop); font-weight: 700; }
+  .inapoi { display: inline-block; margin: 6px 0 0; color: #fff; font-weight: 600; }
+  .antet a.inapoi:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+  .avertizare { margin: 0; color: #dbe2e9; font-size: .95rem; }
+  main.continut { padding-bottom: 24px; }
+</style>
+</head>
+<body>
+<header class="antet">
+  <div class="continut">
+    <p class="supratitlu">Verificator UR20</p>
+    <h1>Teste automate</h1>
+    <p class="avertizare">Valorile de referință (8,6 găleți/min la 5 kg, 7,4 la 13 kg) sunt rezultate de test din aplicația PURATOS, nu garanții.</p>
+    <a class="inapoi" href="./index.html">← Înapoi la verificator</a>
+  </div>
+</header>
+
+<main class="continut">
+  <div id="rezumat" class="rezumat" role="status" aria-live="polite">
+    <strong>Testele rulează…</strong>
+  </div>
+  <p class="intrare">Caz de bază: industrie alimentară, găleată 13 kg, 44 găleți pe palet, 6 găleți/min, 3 schimburi × 8 ore, 2 operatori, mâner da, separator da, spațiu da, gripper 5 kg (ipoteză). Fiecare caz schimbă doar ce scrie în titlu. Valorile așteptate sunt scrise de mână din specificație, nu calculate cu codul testat.</p>
+  <div id="grupuri"></div>
+</main>
+
+<footer class="subsol">
+  <div class="continut">
+    <p>Pagina încarcă <code>./logic.js</code> (aceeași logică folosită de verificator) și rulează testele la fiecare deschidere. <a href="./index.html">Înapoi la verificator</a>.</p>
+  </div>
+</footer>
+
+<script src="./logic.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var ICO_OK = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7 12.5l3.2 3.2L17 9"/></svg>';
+  var ICO_PICAT = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/></svg>';
+
+  /* Texte de verdict, scrise de mână din specificație (PLAN.md, B3). */
+  var VERDICTE = {
+    potrivit: 'Potrivit pentru evaluare tehnică',
+    validare: 'Necesită validare suplimentară',
+    in_afara: 'În afara aplicației de referință'
+  };
+
+  function baza() {
+    return {
+      industrie: 'alimentar', greutateKg: 13, galetiPePalet: 44, debitGaletiMin: 6,
+      schimburiPeZi: 3, orePeSchimb: 8, operatori: 2,
+      maner: true, separator: true, spatiu: 'da', greutateGripperKg: 5
+    };
+  }
+  function cu(schimbari) {
+    var o = baza();
+    for (var k in schimbari) if (Object.prototype.hasOwnProperty.call(schimbari, k)) o[k] = schimbari[k];
+    return o;
+  }
+  function brutBaza(schimbari) {
+    var o = {
+      industrie: 'alimentar', greutate: '13', 'galeti-palet': '44', debit: '6', schimburi: '3', ore: '8',
+      operatori: '2', maner: 'da', separator: 'da', spatiu: 'da', gripper: '5'
+    };
+    for (var k in schimbari || {}) o[k] = schimbari[k];
+    return o;
+  }
+  function areCod(lista, cod) {
+    return (lista || []).some(function (x) { return x && x.cod === cod; });
+  }
+
+  /* ---------- tipuri de verificări ---------- */
+  function verdict(cod) {
+    return {
+      ce: 'Verdict', asteptat: VERDICTE[cod] + ' (' + cod + ')',
+      obtine: function (r) { return r.verdictText + ' (' + r.verdict + ')'; },
+      trece: function (r) { return r.verdict === cod && r.verdictText === VERDICTE[cod]; }
+    };
+  }
+  function aprox(ce, asteptat, cale, toleranta) {
+    var t = toleranta == null ? 0.01 : toleranta;
+    return {
+      ce: ce, asteptat: '≈ ' + nr(asteptat),
+      obtine: function (r) { var v = cale(r); return typeof v === 'number' ? nr(v) : String(v); },
+      trece: function (r) { var v = cale(r); return typeof v === 'number' && Math.abs(v - asteptat) <= t; }
+    };
+  }
+  function exact(ce, asteptat, cale, afisare) {
+    return {
+      ce: ce, asteptat: afisare || afis(asteptat),
+      obtine: function (r) { return afis(cale(r)); },
+      trece: function (r) { return cale(r) === asteptat; }
+    };
+  }
+  function adevarat(ce, asteptatText, obtinutText, conditie) {
+    return {
+      ce: ce, asteptat: asteptatText,
+      obtine: function (r) { return obtinutText(r); },
+      trece: conditie
+    };
+  }
+  function cuMotiv(cod, descriere) {
+    return adevarat('Motiv: ' + descriere, 'motivul „' + cod + '” apare',
+      function (r) { return 'motive: ' + coduri(r.motive); },
+      function (r) { return areCod(r.motive, cod); });
+  }
+  function faraMotiv(cod, descriere) {
+    return adevarat('Fără motivul: ' + descriere, 'motivul „' + cod + '” nu apare',
+      function (r) { return 'motive: ' + coduri(r.motive); },
+      function (r) { return !areCod(r.motive, cod); });
+  }
+  function cuNota(cod, descriere) {
+    return adevarat('Notă: ' + descriere, 'nota „' + cod + '” apare',
+      function (r) { return 'note: ' + coduri(r.note); },
+      function (r) { return areCod(r.note, cod); });
+  }
+  function coduri(lista) {
+    var c = (lista || []).map(function (x) { return x.cod; });
+    return c.length ? c.join(', ') : '(niciunul)';
+  }
+  function nr(n) { return Number(n).toLocaleString('ro-RO', { maximumFractionDigits: 3 }); }
+  function afis(v) {
+    if (v === undefined) return '(lipsă)';
+    if (typeof v === 'number') return nr(v);
+    if (typeof v === 'string') return '„' + v + '”';
+    return JSON.stringify(v);
+  }
+
+  /* ---------- cazurile ---------- */
+  var L = window.UR20Logic;
+  var ev = function (input) { return function () { return L.evaluate(input); }; };
+
+  var GRUPURI = [
+    {
+      titlu: 'evaluate(): verdict, limite și calcule',
+      text: 'Regulile din specificație: capacitatea UR20 de 20 kg are prioritate; orice abatere de la aplicația de referință cere validare; altfel, potrivit.',
+      teste: [
+        { nume: '1. Caz de bază (13 kg, 6 găleți/min)', intrare: 'datele de bază', ruleaza: ev(baza()), verificari: [
+          verdict('potrivit'),
+          aprox('Kg ridicate manual pe schimb (6 × 60 × 8 × 13)', 37440, function (r) { return r.calcule.kgPeSchimb; }, 0.001),
+          aprox('Paleți pe oră (6 × 60 / 44)', 8.18, function (r) { return r.calcule.paletiPeOra; }),
+          aprox('Minute între două schimbări de palet (44 / 6)', 7.33, function (r) { return r.calcule.minuteIntrePaleti; }),
+          exact('Sarcină totală, kg (13 + 5)', 18, function (r) { return r.calcule.sarcinaTotalaKg; }),
+          exact('Capacitate UR20, kg', 20, function (r) { return r.calcule.capacitateKg; }),
+          exact('Blocaj', 'amonte', function (r) { return r.blocaj; }, '„amonte” (linia, 6, e mai lentă decât 7,4)'),
+          cuNota('blocaj_amonte', 'limita este în amonte')
+        ] },
+        { nume: '2. Limită: exact 5 kg, 100 pe palet, debit exact 8,6', intrare: 'greutate 5, găleți pe palet 100, debit 8,6',
+          ruleaza: ev(cu({ greutateKg: 5, galetiPePalet: 100, debitGaletiMin: 8.6 })), verificari: [
+          verdict('potrivit'),
+          exact('Debit de referință (găleți/min)', 8.6, function (r) { return r.calcule.debitReferinta; }),
+          faraMotiv('debit_peste_referinta', 'debit peste referință')
+        ] },
+        { nume: '3. 5 kg, debit 8,7 (peste 8,6)', intrare: 'greutate 5, debit 8,7',
+          ruleaza: ev(cu({ greutateKg: 5, debitGaletiMin: 8.7 })), verificari: [
+          verdict('validare'), cuMotiv('debit_peste_referinta', 'debit peste valoarea testată')
+        ] },
+        { nume: '4. Limită: exact 13 kg, debit exact 7,4', intrare: 'greutate 13, debit 7,4',
+          ruleaza: ev(cu({ greutateKg: 13, debitGaletiMin: 7.4 })), verificari: [
+          verdict('potrivit'),
+          exact('Debit de referință (găleți/min)', 7.4, function (r) { return r.calcule.debitReferinta; })
+        ] },
+        { nume: '5. 13 kg, debit 7,5 (peste 7,4)', intrare: 'greutate 13, debit 7,5',
+          ruleaza: ev(cu({ debitGaletiMin: 7.5 })), verificari: [
+          verdict('validare'), cuMotiv('debit_peste_referinta', 'debit peste valoarea testată')
+        ] },
+        { nume: '6. Format intermediar: 9 kg, debit 7,4', intrare: 'greutate 9, debit 7,4',
+          ruleaza: ev(cu({ greutateKg: 9, debitGaletiMin: 7.4 })), verificari: [
+          verdict('potrivit'),
+          exact('Debit de referință, fără interpolare', 7.4, function (r) { return r.calcule.debitReferinta; }),
+          cuNota('format_intermediar', 'format netestat, de validat')
+        ] },
+        { nume: '7. 4 kg (sub intervalul testat 5–13 kg)', intrare: 'greutate 4',
+          ruleaza: ev(cu({ greutateKg: 4 })), verificari: [
+          verdict('validare'), cuMotiv('greutate_in_afara_intervalului', 'greutate în afara intervalului')
+        ] },
+        { nume: '8. 14 kg (peste intervalul testat)', intrare: 'greutate 14',
+          ruleaza: ev(cu({ greutateKg: 14 })), verificari: [
+          verdict('validare'), cuMotiv('greutate_in_afara_intervalului', 'greutate în afara intervalului'),
+          faraMotiv('capacitate', 'capacitate depășită (14 + 5 = 19 kg)')
+        ] },
+        { nume: '9. Limită de capacitate: 15 kg (15 + 5 = exact 20 kg)', intrare: 'greutate 15',
+          ruleaza: ev(cu({ greutateKg: 15 })), verificari: [
+          verdict('validare'),
+          exact('Sarcină totală, kg', 20, function (r) { return r.calcule.sarcinaTotalaKg; }),
+          faraMotiv('capacitate', 'capacitate depășită')
+        ] },
+        { nume: '10. 16 kg (16 + 5 = 21 kg > 20 kg)', intrare: 'greutate 16',
+          ruleaza: ev(cu({ greutateKg: 16 })), verificari: [
+          verdict('in_afara'),
+          exact('Sarcină totală, kg', 21, function (r) { return r.calcule.sarcinaTotalaKg; }),
+          cuMotiv('capacitate', 'capacitate UR20 depășită')
+        ] },
+        { nume: '11. Fără mâner', intrare: 'mâner nu',
+          ruleaza: ev(cu({ maner: false })), verificari: [
+          verdict('validare'), cuMotiv('fara_maner', 'găleată fără mâner')
+        ] },
+        { nume: '12. Altă industrie decât cea alimentară', intrare: 'industrie: alta',
+          ruleaza: ev(cu({ industrie: 'alta' })), verificari: [
+          verdict('validare'), cuMotiv('alta_industrie', 'altă industrie')
+        ] },
+        { nume: '13a. Spațiu la capătul liniei: „nu”', intrare: 'spațiu nu',
+          ruleaza: ev(cu({ spatiu: 'nu' })), verificari: [
+          verdict('validare'), cuMotiv('spatiu', 'spațiu de verificat')
+        ] },
+        { nume: '13b. Spațiu la capătul liniei: „nu știu”', intrare: 'spațiu nu știu',
+          ruleaza: ev(cu({ spatiu: 'nu_stiu' })), verificari: [
+          verdict('validare'), cuMotiv('spatiu', 'spațiu de verificat')
+        ] },
+        { nume: '14. 16 kg + altă industrie (capacitatea are prioritate)', intrare: 'greutate 16, industrie: alta',
+          ruleaza: ev(cu({ greutateKg: 16, industrie: 'alta' })), verificari: [
+          verdict('in_afara'), cuMotiv('capacitate', 'capacitate UR20 depășită')
+        ] }
+      ]
+    },
+    {
+      titlu: 'calificaCererea(): cerere relevantă sau incompletă',
+      text: 'Relevantă numai cu industrie alimentară, verdict diferit de „în afara referinței”, date tehnice complete și firmă, rol, județ.',
+      teste: (function () {
+        var contact = { firma: 'Firma Demo SRL', rol: 'Director de producție', judet: 'Ilfov' };
+        function cc(input, c) { return function () { return L.calificaCererea(input, L.evaluate(input), c); }; }
+        function eticheta(t) { return exact('Etichetă', t, function (r) { return r.eticheta; }); }
+        function lipsa(text) {
+          return adevarat('Lipsuri', 'conține „' + text + '”',
+            function (r) { return r.lipsuri.length ? r.lipsuri.join('; ') : '(nicio lipsă)'; },
+            function (r) { return r.lipsuri.indexOf(text) !== -1; });
+        }
+        return [
+          { nume: 'Cerere completă, alimentară, verdict potrivit', intrare: 'caz de bază + firmă, rol, județ', ruleaza: cc(baza(), contact), verificari: [
+            exact('Relevantă', true, function (r) { return r.relevanta; }, 'da (true)'),
+            eticheta('Cerere relevantă'),
+            exact('Număr de lipsuri', 0, function (r) { return r.lipsuri.length; })
+          ] },
+          { nume: 'Fără rol', intrare: 'caz de bază, rol gol', ruleaza: cc(baza(), { firma: contact.firma, rol: '', judet: contact.judet }), verificari: [
+            exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
+            eticheta('Cerere incompletă'), lipsa('Lipsește rolul')
+          ] },
+          { nume: 'Altă industrie', intrare: 'industrie: alta + firmă, rol, județ', ruleaza: cc(cu({ industrie: 'alta' }), contact), verificari: [
+            exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
+            eticheta('Cerere incompletă')
+          ] },
+          { nume: 'Verdict în afara referinței (16 kg)', intrare: 'greutate 16 + firmă, rol, județ', ruleaza: cc(cu({ greutateKg: 16 }), contact), verificari: [
+            exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
+            eticheta('Cerere incompletă'), lipsa('Verdict în afara aplicației de referință')
+          ] }
+        ];
+      })()
+    },
+    {
+      titlu: 'locatieTechCon(): cine preia cererea',
+      text: 'Moldova → Iași, vest → Timișoara, restul → Dragomirești-Deal.',
+      teste: [
+        ['Iași', 'Iași'], ['Timiș', 'Timișoara'], ['București', 'Dragomirești-Deal']
+      ].map(function (p) {
+        return { nume: 'Județ ' + p[0], intrare: 'județ „' + p[0] + '”',
+          ruleaza: function () { return L.locatieTechCon(p[0]); },
+          verificari: [exact('Locația Tech-Con', p[1], function (r) { return r; })] };
+      })
+    },
+    {
+      titlu: 'valideaza(): date greșite în formular',
+      text: 'Celelalte câmpuri au valorile cazului de bază, ca text, cum vin din formular.',
+      teste: [
+        { nume: 'Schimburi „4” (în afara 1–3)', intrare: 'schimburi „4”', ruleaza: function () { return L.valideaza(brutBaza({ schimburi: '4' })); }, verificari: [
+          adevarat('Eroare la schimburi', 'există mesaj de eroare', function (r) { return r.erori.schimburi ? '„' + r.erori.schimburi + '”' : '(fără eroare)'; }, function (r) { return !!r.erori.schimburi; }),
+          exact('Formular valid', false, function (r) { return r.ok; }, 'nu (false)')
+        ] },
+        { nume: 'Debit „repede” (text în loc de număr)', intrare: 'debit „repede”', ruleaza: function () { return L.valideaza(brutBaza({ debit: 'repede' })); }, verificari: [
+          adevarat('Eroare la debit', 'există mesaj de eroare', function (r) { return r.erori.debit ? '„' + r.erori.debit + '”' : '(fără eroare)'; }, function (r) { return !!r.erori.debit; }),
+          exact('Formular valid', false, function (r) { return r.ok; }, 'nu (false)')
+        ] },
+        { nume: 'Greutate „25” (peste capacitate: avertisment, nu eroare)', intrare: 'greutate „25”', ruleaza: function () { return L.valideaza(brutBaza({ greutate: '25' })); }, verificari: [
+          adevarat('Avertisment la greutate', 'există avertisment', function (r) { return r.avertismente.greutate ? '„' + r.avertismente.greutate + '”' : '(fără avertisment)'; }, function (r) { return !!r.avertismente.greutate; }),
+          adevarat('Eroare la greutate', 'nicio eroare', function (r) { return r.erori.greutate ? '„' + r.erori.greutate + '”' : '(nicio eroare)'; }, function (r) { return !r.erori.greutate; }),
+          exact('Formular valid', true, function (r) { return r.ok; }, 'da (true)')
+        ] }
+      ]
+    }
+  ];
+
+  /* ---------- rulare ---------- */
+  function ruleazaTest(t) {
+    var rez = { nume: t.nume, trecut: true, verificari: [] };
+    var r, eroare = null;
+    try { r = t.ruleaza(); } catch (e) { eroare = e; }
+    t.verificari.forEach(function (v) {
+      var linie = { ce: v.ce, asteptat: v.asteptat, obtinut: '', trecut: false };
+      if (eroare) {
+        linie.obtinut = 'Eroare la rulare: ' + (eroare && eroare.message ? eroare.message : String(eroare));
+      } else {
+        try { linie.obtinut = v.obtine(r); } catch (e) { linie.obtinut = 'Eroare: ' + e.message; }
+        try { linie.trecut = v.trece(r) === true; } catch (e2) { linie.trecut = false; linie.obtinut += ' (eroare: ' + e2.message + ')'; }
+      }
+      if (!linie.trecut) rez.trecut = false;
+      rez.verificari.push(linie);
+    });
+    return rez;
+  }
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  var rezumat = document.getElementById('rezumat');
+  var container = document.getElementById('grupuri');
+
+  if (!L || typeof L.evaluate !== 'function') {
+    rezumat.className = 'rezumat picat';
+    rezumat.innerHTML = '<span class="ico">' + ICO_PICAT + '</span><div><strong>Logica nu s-a încărcat</strong><p class="detaliu">Fișierul ./logic.js lipsește sau are o eroare. Niciun test nu a rulat.</p></div>';
+    document.title = '0 teste rulate — Verificator UR20';
+    window.UR20Teste = { total: 0, trecute: 0, picate: [{ nume: 'Încărcare logic.js', motiv: 'UR20Logic lipsește' }] };
+    return;
+  }
+
+  var total = 0, trecute = 0, picate = [];
+  GRUPURI.forEach(function (g) {
+    var sec = el('section', 'grup');
+    sec.appendChild(el('h2', null, g.titlu));
+    sec.appendChild(el('p', null, g.text));
+    var ul = el('ul', 'teste');
+    g.teste.forEach(function (t) {
+      var rez = ruleazaTest(t);
+      total++;
+      if (rez.trecut) trecute++;
+      else picate.push({
+        grup: g.titlu, nume: t.nume,
+        verificari: rez.verificari.filter(function (v) { return !v.trecut; })
+          .map(function (v) { return { ce: v.ce, asteptat: v.asteptat, obtinut: v.obtinut }; })
+      });
+
+      var li = el('li', 'test' + (rez.trecut ? '' : ' picat'));
+      var cap = el('div', 'test-cap');
+      cap.appendChild(el('h3', null, t.nume));
+      cap.appendChild(el('span', 'stare ' + (rez.trecut ? 'ok' : 'picat'), rez.trecut ? '✓ Trecut' : '✗ Picat'));
+      li.appendChild(cap);
+      li.appendChild(el('p', 'intrare', 'Intrare: ' + t.intrare));
+      var vl = el('ul', 'verificari');
+      rez.verificari.forEach(function (v) {
+        var vi = el('li', 'verificare ' + (v.trecut ? 'ok' : 'picat'));
+        var ico = el('span', 'ico-mic');
+        ico.innerHTML = v.trecut ? ICO_OK : ICO_PICAT;
+        ico.setAttribute('role', 'img');
+        ico.setAttribute('aria-label', v.trecut ? 'trecut' : 'picat');
+        vi.appendChild(ico);
+        var dl = el('dl');
+        dl.appendChild(el('div', 'ce', v.ce));
+        dl.appendChild(el('dt', null, 'Așteptat:'));
+        dl.appendChild(el('dd', null, v.asteptat));
+        dl.appendChild(el('dt', null, 'Obținut:'));
+        dl.appendChild(el('dd', 'obtinut', v.obtinut));
+        vi.appendChild(dl);
+        vl.appendChild(vi);
+      });
+      li.appendChild(vl);
+      ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    container.appendChild(sec);
+  });
+
+  var toateOk = picate.length === 0;
+  rezumat.className = 'rezumat ' + (toateOk ? 'ok' : 'picat');
+  rezumat.innerHTML = '';
+  var ic = el('span', 'ico');
+  ic.innerHTML = toateOk ? ICO_OK : ICO_PICAT;
+  rezumat.appendChild(ic);
+  var txt = el('div');
+  txt.appendChild(el('strong', null, (toateOk ? '✓ ' : '✗ ') + trecute + ' din ' + total + ' teste trecute'));
+  txt.appendChild(el('p', 'detaliu', toateOk
+    ? 'Toate regulile verificate se respectă.'
+    : picate.length + (picate.length === 1 ? ' test a picat: ' : ' teste au picat: ') +
+      picate.map(function (p) { return p.nume; }).join('; ') + '. Detaliile sunt mai jos, marcate cu roșu.'));
+  rezumat.appendChild(txt);
+
+  document.title = trecute + '/' + total + ' teste trecute — Verificator UR20';
+  window.UR20Teste = { total: total, trecute: trecute, picate: picate };
+})();
+</script>
+</body>
+</html>
