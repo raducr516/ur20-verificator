@@ -36,6 +36,11 @@
     return Number(n).toLocaleString('ro-RO', { maximumFractionDigits: z == null ? 2 : z });
   }
 
+  /* Forma corectă a substantivului după număr: „1 schimb”, „2 schimburi”. */
+  function cuNumar(n, singular, plural) {
+    return fmt(n) + ' ' + (fmt(n) === '1' ? singular : plural);
+  }
+
   function esc(t) {
     return String(t == null ? '' : t).replace(/[&<>"']/g, function (ch) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
@@ -183,7 +188,7 @@
     return [
       card(fmt(c.tonePeSchimb), 't', 'ridicate manual pe schimb (' + fmt(c.kgPeSchimb, 0) + ' kg); ' + fmt(c.kgPeZi, 0) + ' kg pe zi'),
       card(fmt(c.kgPeOperatorPeSchimb, 0), 'kg', 'ridicate manual de fiecare operator, pe schimb'),
-      card(fmt(c.paletiPeOra), 'paleți/oră', 'paleți compleți pe oră'),
+      card(fmt(c.paletiPeOra), fmt(c.paletiPeOra) === '1' ? 'palet/oră' : 'paleți/oră', 'paleți compleți pe oră'),
       card(fmt(c.minuteIntrePaleti), 'min', 'între două schimbări de palet (manuale)'),
       card(fmt(c.sarcinaTotalaKg) + ' / ' + fmt(c.capacitateKg), 'kg', 'sarcina totală (găleată + gripper ' + fmt(input.greutateGripperKg) + ' kg, ipoteză) față de capacitatea nominală UR20', true, bara(c.sarcinaTotalaKg, c.capacitateKg)),
       card(fmt(input.debitGaletiMin) + ' / ' + fmt(c.debitReferinta), 'găleți/min', (c.formatTestatExact
@@ -232,13 +237,19 @@
 
   function rand(th, td) { return '<tr><th scope="row">' + th + '</th><td>' + td + '</td></tr>'; }
 
+  /* Tipul cererii: 'relevanta', 'incompleta' sau 'validare_separata' (cererile vechi nu au „tip”). */
+  function tipCerere(k) { return k.tip || (k.relevanta ? 'relevanta' : 'incompleta'); }
+
   function htmlFisa(cerere) {
     var i = cerere.input, r = cerere.rezultat, c = r.calcule, k = cerere.calificare, ct = cerere.contact;
     var dataText = new Date(cerere.data).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     var icoOk = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M6.5 12.5l3.5 3.5 7.5-8" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     var icoAtentie = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8L23 21.5H1z" fill="currentColor"/><path d="M12 8.5v6.2" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="18" r="1.5" fill="#fff"/></svg>';
-    var calif = '<div id="calificare" class="calificare ' + (k.relevanta ? 'calificare-relevanta' : 'calificare-incompleta') + '" data-relevanta="' + k.relevanta + '">' +
-      '<p class="titlu">' + (k.relevanta ? icoOk : icoAtentie) + '<span id="eticheta-cerere">' + esc(k.eticheta) + '</span></p>' +
+    var icoInfo = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><circle cx="12" cy="6.8" r="1.6" fill="#fff"/><path d="M12 10.5v7.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>';
+    var tip = tipCerere(k);
+    var stil = { relevanta: ['calificare-relevanta', icoOk], incompleta: ['calificare-incompleta', icoAtentie], validare_separata: ['calificare-separata', icoInfo] }[tip];
+    var calif = '<div id="calificare" class="calificare ' + stil[0] + '" data-relevanta="' + k.relevanta + '" data-tip="' + tip + '">' +
+      '<p class="titlu">' + stil[1] + '<span id="eticheta-cerere">' + esc(k.eticheta) + '</span></p>' +
       (k.lipsuri.length ? '<ul id="lista-lipsuri">' + k.lipsuri.map(function (l) { return '<li>' + esc(l) + '</li>'; }).join('') + '</ul>' : '') +
       '</div>';
     var alocare = '<div class="alocare"><p id="alocare">' + (ct.judet
@@ -254,8 +265,8 @@
         rand('Tip produs / industrie', ETICHETE_INDUSTRIE[i.industrie] || '–') +
         rand('Greutatea găleții pline', fmt(i.greutateKg) + ' kg') +
         rand('Găleți pe palet', fmt(i.galetiPePalet)) +
-        rand('Debitul liniei', fmt(i.debitGaletiMin) + ' găleți/min') +
-        rand('Program', fmt(i.schimburiPeZi) + ' schimburi × ' + fmt(i.orePeSchimb) + ' h') +
+        rand('Debitul liniei', cuNumar(i.debitGaletiMin, 'găleată/min', 'găleți/min')) +
+        rand('Program', cuNumar(i.schimburiPeZi, 'schimb', 'schimburi') + ' × ' + fmt(i.orePeSchimb) + ' h') +
         rand('Operatori la paletizare, pe schimb', fmt(i.operatori)) +
         rand('Mâner', i.maner ? 'Da' : 'Nu') +
         rand('Separatoare între straturi', i.separator ? 'Da' : 'Nu') +
@@ -296,17 +307,22 @@
     if (!Array.isArray(cereri)) cereri = [];
     cereri = cereri.filter(function (x) { return x && x.numar !== cerere.numar; });
     cereri.push(cerere);
-    scrieStocare(CHEIE_CERERI, cereri.slice(-50));
+    var salvata = scrieStocare(CHEIE_CERERI, cereri.slice(-50));
     stare.ultimaCerere = cerere;
     $('fisa').innerHTML = htmlFisa(cerere);
-    $('btn-completeaza').hidden = cerere.calificare.relevanta;
+    var nota = $('nota-stocare');
+    if (nota) {
+      nota.innerHTML = salvata ? '' : ICO_ATENTIE + '<span>Cererea nu a putut fi salvată în acest browser. Fișa rămâne vizibilă până închideți pagina.</span>';
+      nota.hidden = salvata;
+    }
+    $('btn-completeaza').hidden = tipCerere(cerere.calificare) !== 'incompleta';
     arataEcran('confirmare');
   }
 
   function laCompleteaza() {
     if (stare.ultimaCerere) stare.ultimaCerere.inCompletare = true;
     var lipsuri = stare.ultimaCerere ? stare.ultimaCerere.calificare.lipsuri : [];
-    var doarContact = lipsuri.every(function (l) { return /firma|rolul|județul/.test(l); });
+    var doarContact = lipsuri.every(function (l) { return /firma|rolul|județul|validează separat|în afara aplicației/.test(l); });
     arataEcran(doarContact ? 'cerere' : 'linie');
   }
 

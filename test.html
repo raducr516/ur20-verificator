@@ -260,12 +260,13 @@
       ]
     },
     {
-      titlu: 'calificaCererea(): cerere relevantă sau incompletă',
-      text: 'Relevantă numai cu industrie alimentară, verdict diferit de „în afara referinței”, date tehnice complete și firmă, rol, județ.',
+      titlu: 'calificaCererea(): cerere relevantă, incompletă sau de validat separat',
+      text: 'Relevantă numai cu industrie alimentară, verdict diferit de „în afara referinței”, date tehnice complete și firmă, rol, județ. Cu date complete, dar altă industrie sau verdict „în afara referinței”: de validat separat.',
       teste: (function () {
         var contact = { firma: 'Firma Demo SRL', rol: 'Director de producție', judet: 'Ilfov' };
         function cc(input, c) { return function () { return L.calificaCererea(input, L.evaluate(input), c); }; }
         function eticheta(t) { return exact('Etichetă', t, function (r) { return r.eticheta; }); }
+        function tip(t) { return exact('Tip', t, function (r) { return r.tip; }); }
         function lipsa(text) {
           return adevarat('Lipsuri', 'conține „' + text + '”',
             function (r) { return r.lipsuri.length ? r.lipsuri.join('; ') : '(nicio lipsă)'; },
@@ -283,11 +284,15 @@
           ] },
           { nume: 'Altă industrie', intrare: 'industrie: alta + firmă, rol, județ', ruleaza: cc(cu({ industrie: 'alta' }), contact), verificari: [
             exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
-            eticheta('Cerere incompletă')
+            eticheta('Cerere de validat separat'), tip('validare_separata')
           ] },
           { nume: 'Verdict în afara referinței (16 kg)', intrare: 'greutate 16 + firmă, rol, județ', ruleaza: cc(cu({ greutateKg: 16 }), contact), verificari: [
             exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
-            eticheta('Cerere incompletă'), lipsa('Verdict în afara aplicației de referință')
+            eticheta('Cerere de validat separat'), tip('validare_separata'), lipsa('Verdict în afara aplicației de referință')
+          ] },
+          { nume: 'Fără rol și altă industrie', intrare: 'industrie: alta, rol gol', ruleaza: cc(cu({ industrie: 'alta' }), { firma: contact.firma, rol: '', judet: contact.judet }), verificari: [
+            exact('Relevantă', false, function (r) { return r.relevanta; }, 'nu (false)'),
+            eticheta('Cerere incompletă'), tip('incompleta'), lipsa('Lipsește rolul')
           ] }
         ];
       })()
@@ -319,8 +324,23 @@
           adevarat('Avertisment la greutate', 'există avertisment', function (r) { return r.avertismente.greutate ? '„' + r.avertismente.greutate + '”' : '(fără avertisment)'; }, function (r) { return !!r.avertismente.greutate; }),
           adevarat('Eroare la greutate', 'nicio eroare', function (r) { return r.erori.greutate ? '„' + r.erori.greutate + '”' : '(nicio eroare)'; }, function (r) { return !r.erori.greutate; }),
           exact('Formular valid', true, function (r) { return r.ok; }, 'da (true)')
+        ] },
+        { nume: 'Găleți pe palet „1.000” (punct = separator de mii)', intrare: 'găleți pe palet „1.000”', ruleaza: function () { return L.valideaza(brutBaza({ 'galeti-palet': '1.000' })); }, verificari: [
+          exact('Formular valid', true, function (r) { return r.ok; }, 'da (true)'),
+          exact('Găleți pe palet', 1000, function (r) { return r.valori.galetiPePalet; })
         ] }
       ]
+    },
+    {
+      titlu: 'parseNumarRo(): numere scrise în română',
+      text: 'Virgula este separator zecimal; punctul urmat de grupuri de exact trei cifre separă miile.',
+      teste: [
+        ['1.000', 1000], ['12.500', 12500], ['7.4', 7.4], ['7,4', 7.4], ['1.000,5', 1000.5]
+      ].map(function (p) {
+        return { nume: 'Text „' + p[0] + '”', intrare: '„' + p[0] + '”',
+          ruleaza: function () { return L.parseNumarRo(p[0]); },
+          verificari: [exact('Număr', p[1], function (r) { return r; })] };
+      })
     }
   ];
 

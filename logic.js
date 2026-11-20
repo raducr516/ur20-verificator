@@ -33,8 +33,10 @@
     if (text == null) return NaN;
     var s = String(text).trim().replace(/\s+/g, '');
     if (s === '') return NaN;
-    // „1.000,5” → „1000.5”; „7,4” → „7.4”; „7.4” rămâne
-    if (s.indexOf(',') !== -1) s = s.replace(/\./g, '').replace(',', '.');
+    // „1.000” → „1000”, „12.500” → „12500”, „1.000,5” → „1000.5” (punctul separă miile: grupuri de exact trei cifre)
+    if (/^[-+]?[1-9]\d{0,2}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
+    // „7,4” → „7.4”; „7.4” rămâne
+    else if (s.indexOf(',') !== -1) s = s.replace(/\./g, '').replace(',', '.');
     if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(s)) return NaN;
     return parseFloat(s);
   }
@@ -220,25 +222,34 @@
   function esteBool(v) { return v === true || v === false; }
   function completat(v) { return typeof v === 'string' && v.trim() !== ''; }
 
+  var ETICHETE_CERERE = {
+    relevanta: 'Cerere relevantă',
+    incompleta: 'Cerere incompletă',
+    validare_separata: 'Cerere de validat separat'
+  };
+
   function calificaCererea(input, rezultat, contact) {
     var i = input || {};
     var c = contact || {};
     var lipsuri = [];
+    var dateLipsa = 0;    // date tehnice sau de contact necompletate
+    var separat = 0;      // date complete, dar în afara segmentului (altă industrie sau verdict „în afara”)
 
     CAMPURI_TEHNICE.forEach(function (camp) {
-      if (!camp[2](i[camp[0]])) lipsuri.push(camp[1]);
+      if (!camp[2](i[camp[0]])) { lipsuri.push(camp[1]); dateLipsa++; }
     });
-    if (!rezultat || !rezultat.verdict) lipsuri.push('Lipsește verdictul verificării');
-    if (i.industrie === 'alta') lipsuri.push('Industria nu este cea alimentară: cerințele tehnice se validează separat');
-    if (rezultat && rezultat.verdict === 'in_afara') lipsuri.push('Verdict în afara aplicației de referință');
-    if (!completat(c.firma)) lipsuri.push('Lipsește firma');
-    if (!completat(c.rol)) lipsuri.push('Lipsește rolul');
-    if (!completat(c.judet)) lipsuri.push('Lipsește județul');
+    if (!rezultat || !rezultat.verdict) { lipsuri.push('Lipsește verdictul verificării'); dateLipsa++; }
+    if (i.industrie === 'alta') { lipsuri.push('Industria nu este cea alimentară: cerințele tehnice se validează separat'); separat++; }
+    if (rezultat && rezultat.verdict === 'in_afara') { lipsuri.push('Verdict în afara aplicației de referință'); separat++; }
+    if (!completat(c.firma)) { lipsuri.push('Lipsește firma'); dateLipsa++; }
+    if (!completat(c.rol)) { lipsuri.push('Lipsește rolul'); dateLipsa++; }
+    if (!completat(c.judet)) { lipsuri.push('Lipsește județul'); dateLipsa++; }
 
-    var relevanta = lipsuri.length === 0;
+    var tip = dateLipsa ? 'incompleta' : (separat ? 'validare_separata' : 'relevanta');
     return {
-      relevanta: relevanta,
-      eticheta: relevanta ? 'Cerere relevantă' : 'Cerere incompletă',
+      relevanta: tip === 'relevanta',
+      tip: tip,
+      eticheta: ETICHETE_CERERE[tip],
       lipsuri: lipsuri
     };
   }
