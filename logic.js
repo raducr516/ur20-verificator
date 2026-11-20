@@ -35,8 +35,8 @@
     if (s === '') return NaN;
     // „1.000” → „1000”, „12.500” → „12500”, „1.000,5” → „1000.5” (punctul separă miile: grupuri de exact trei cifre)
     if (/^[-+]?[1-9]\d{0,2}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '').replace(',', '.');
-    // „7,4” → „7.4”; „7.4” rămâne
-    else if (s.indexOf(',') !== -1) s = s.replace(/\./g, '').replace(',', '.');
+    // „7,4” → „7.4”; „7.4” rămâne; punct și virgulă în altă formă decât cea de mai sus („1.2,3”, „1,2.3”) → NaN
+    else if (s.indexOf(',') !== -1) { if (s.indexOf('.') !== -1) return NaN; s = s.replace(',', '.'); }
     if (!/^[-+]?(\d+\.?\d*|\.\d+)$/.test(s)) return NaN;
     return parseFloat(s);
   }

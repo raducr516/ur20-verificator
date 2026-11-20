@@ -340,7 +340,12 @@
         return { nume: 'Text „' + p[0] + '”', intrare: '„' + p[0] + '”',
           ruleaza: function () { return L.parseNumarRo(p[0]); },
           verificari: [exact('Număr', p[1], function (r) { return r; })] };
-      })
+      }).concat(['1.2,3', '1,2.3'].map(function (x) {
+        return { nume: 'Text „' + x + '” (punct și virgulă amestecate)', intrare: '„' + x + '”',
+          ruleaza: function () { return L.parseNumarRo(x); },
+          verificari: [adevarat('Număr', 'nenumeric (NaN)', function (r) { return String(r); },
+            function (r) { return typeof r === 'number' && r !== r; })] };
+      }))
     }
   ];
 
